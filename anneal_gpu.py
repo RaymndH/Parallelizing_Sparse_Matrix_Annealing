@@ -17,6 +17,8 @@ import argparse, random, re, time
 import numpy as np
 import torch
 
+CDT = torch.int8        # dtype of colors and color offsets (Q <= 127); index math is promoted to int64
+
 
 def read_graph(path):
     with open(path) as f:
@@ -152,12 +154,12 @@ def selftest(device, seed=0):
 
     # 1) parallel step vs sequential, same random draws, several temperatures
     for T in (2.0, 0.5, 0.2, 0.0):
-        q = torch.randint(0, Q, (R, N), device=device, generator=gen)
+        q = torch.randint(0, Q, (R, N), device=device, generator=gen, dtype=CDT)
         Aq = fresh_Aq(q, src_t, nbr_t, base, Q, R, NQ)
         qs = q.cpu().numpy().copy()
         for idx, owner, rowsQ in split:
             shape = (R, idx.numel())
-            off = torch.randint(1, Q, shape, device=device, generator=gen)
+            off = torch.randint(1, Q, shape, device=device, generator=gen, dtype=CDT)
             r = torch.rand(shape, device=device, generator=gen)
             class_step(q, Aq, idx, owner, rowsQ, base, Q, T, off, r, active)
             idx_n, off_n, r_n = idx.cpu().numpy(), off.cpu().numpy(), r.cpu().numpy()
@@ -180,14 +182,14 @@ def selftest(device, seed=0):
     active2 = torch.ones(R2, 1, dtype=torch.bool, device=device)
     reps_k = [torch.arange(groups, device=device) * y + k for k in range(y)]
     for T in (2.0, 0.5, 0.0):
-        q = torch.randint(0, Q, (R2, N), device=device, generator=gen)
+        q = torch.randint(0, Q, (R2, N), device=device, generator=gen, dtype=CDT)
         Aq = fresh_Aq(q, src_t, nbr_t, base2, Q, R2, NQ); G = fresh_G(q, y, N, Q)
         qs = q.cpu().numpy().copy()
         for idx, owner, rowsQ in split:
             idx_n = idx.cpu().numpy()
             for k in range(y):
                 shape = (groups, idx.numel())
-                off = torch.randint(1, Q, shape, device=device, generator=gen)
+                off = torch.randint(1, Q, shape, device=device, generator=gen, dtype=CDT)
                 r = torch.rand(shape, device=device, generator=gen)
                 class_step(q, Aq, idx, owner, rowsQ, base2, Q, T, off, r, active2, reps_k[k], G, gbase, gamma / y)
                 off_n, r_n = off.cpu().numpy(), r.cpu().numpy()
@@ -231,7 +233,7 @@ def anneal(N, Q, e_t, ptr, nbr, splits, R, temps, check_every, device, gen, pyrn
                                     torch.as_tensor(np.diff(ptr), device=device))
     e0, e1 = e_t[:, 0], e_t[:, 1]
 
-    q = torch.randint(0, Q, (R, N), device=device, generator=gen)
+    q = torch.randint(0, Q, (R, N), device=device, generator=gen, dtype=CDT)
     Aq = fresh_Aq(q, src_t, nbr_t, base, Q, R, NQ)
     conf = lambda: (q[:, e0] == q[:, e1]).sum(1)
     if y > 1:
@@ -248,13 +250,13 @@ def anneal(N, Q, e_t, ptr, nbr, splits, R, temps, check_every, device, gen, pyrn
         for idx, owner, rowsQ in split:
             if y == 1:
                 shape = (R, idx.numel())
-                off = torch.randint(1, Q, shape, device=device, generator=gen)
+                off = torch.randint(1, Q, shape, device=device, generator=gen, dtype=CDT)
                 r = torch.rand(shape, device=device, generator=gen)
                 class_step(q, Aq, idx, owner, rowsQ, base, Q, T, off, r, active)
             else:
                 for k in range(y):                                   # replicas of a group one after another
                     shape = (groups, idx.numel())
-                    off = torch.randint(1, Q, shape, device=device, generator=gen)
+                    off = torch.randint(1, Q, shape, device=device, generator=gen, dtype=CDT)
                     r = torch.rand(shape, device=device, generator=gen)
                     class_step(q, Aq, idx, owner, rowsQ, base, Q, T, off, r, active,
                                reps_k[k], G, gbase, gamma / y)

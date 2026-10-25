@@ -67,3 +67,14 @@ LIN=1 ./seq N-1e3_c-18.0_q-5 1.4 0 28000 10 splits1e3.txt     # independent-set 
 - `anneal_gpu.py --cuda-graph`: records each sweep as a CUDA graph (default generator, temperature kept on the GPU).
   At N = 10^3 with 10 seeds: 4.06 -> 0.62 ms/sweep, same solve rate. Gains shrink as N grows
   (one seed: 8x at 10^3, 6x at 10^4, 4x at 10^5, ~1x at 10^6; 1000-sweep runs).
+- `dsatur_split.c`: writes independent-set splits made with DSATUR (random tie-breaking) in the `--splits` file format.
+  `gcc -O3 -march=native -o dsatur_split dsatur_split.c && ./dsatur_split graph 10 splits.txt`.
+  It needs 8 sets per split at every N from 10^3 to 10^6, against 11 to 12 for the random-order greedy splits built
+  into `anneal_gpu.py` and `par.c`. `par.c` takes the file as a sixth argument, `anneal_gpu.py` as `--splits`, and `seq.c` as before.
+  On the GPU this cut time per sweep by about 20 to 30% at N up to 10^5.
+- `par.c`: `SWITCH_T=x` selects a hybrid update. While T > x the energy change is read from the neighbours' colours
+  (no neighbour-count table, no atomics); below x the table is rebuilt once and the usual push update is used.
+  The trajectory is identical in every mode. Pull wins while the acceptance rate is above about 0.25 (T above about 0.9
+  on the linear 1.4 to 0 schedule), push wins below. `SWITCH_T=0.9` was about 9% faster than push-only at N = 10^5, 16 threads.
+  `TRACE=k` also prints the acceptance rate and time per sweep.
+- `anneal_gpu.py`: colours and colour offsets are stored as int8. 8 to 17% faster for 10 seeds at N = 10^5 and 10^6, no gain at 10^4.
