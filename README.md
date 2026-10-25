@@ -66,4 +66,4 @@ LIN=1 ./seq N-1e3_c-18.0_q-5 1.4 0 28000 10 splits1e3.txt     # independent-set 
   Only the self-test has been run so far, not a full RSA solve.
 - `anneal_gpu.py --cuda-graph`: records each sweep as a CUDA graph (default generator, temperature kept on the GPU).
   At N = 10^3 with 10 seeds: 4.06 -> 0.62 ms/sweep, same solve rate. Gains shrink as N grows
-  (about 6x at 10^3 to ~1x at 10^6 with one seed).
+  (one seed: 8x at 10^3, 6x at 10^4, 4x at 10^5, ~1x at 10^6; 1000-sweep runs).
