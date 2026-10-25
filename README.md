@@ -53,3 +53,17 @@ LIN=1 ./seq N-1e3_c-18.0_q-5 1.4 0 28000 10 splits1e3.txt     # independent-set 
 1. Run `--selftest` on atar's GPU.
 2. Run 10⁴ with `--dT 1e-5`, 10 seeds; compare ms/sweep with `seq.c`.
 3. Generate 10⁵ with `plantstate.cpp` (`mant = 5`) and run both.
+
+## Added later
+
+- `par.c`: OpenMP version of `seq.c` (independent-set parallel updates, results do not depend on thread count).
+  `gcc -O3 -march=native -fopenmp -o par par.c -lm`, then `OMP_NUM_THREADS=16 LIN=1 TRACE=2000 ./par graph 1.4 0 1400000 2`
+  (`TRACE=k` prints the conflict count every k sweeps). On a 16-core machine it is about 8x faster than `seq` at N = 10^5.
+- `seq.c`: edge buffer now grows, so graphs with more than 2M edges (N = 10^6) load.
+- `anneal_gpu.py --y Y --gamma G`: replicated simulated annealing (Angelini and Ricci-Tersenghi, arXiv 2206.04760).
+  `--seeds` independent runs of `Y` coupled replicas; the replicas of a run are updated one after another so the
+  parallel step still equals a sequential sweep. `--selftest` checks this against a numpy sequential implementation.
+  Only the self-test has been run so far, not a full RSA solve.
+- `anneal_gpu.py --cuda-graph`: records each sweep as a CUDA graph (default generator, temperature kept on the GPU).
+  At N = 10^3 with 10 seeds: 4.06 -> 0.62 ms/sweep, same solve rate. Gains shrink as N grows
+  (about 6x at 10^3 to ~1x at 10^6 with one seed).

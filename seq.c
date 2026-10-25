@@ -16,7 +16,7 @@ int main(int argc,char**argv){
   FILE*f=fopen(argv[1],"r"); int N,Q=5; char line[256]; if(!fgets(line,sizeof line,f))return 1;
   if(sscanf(line,"N = %d",&N)!=1 && sscanf(line,"%d",&N)!=1){fprintf(stderr,"bad header\n");return 1;}
   int M=0,cap=1<<21,*ea=malloc(cap*4),*eb=malloc(cap*4),a,b;
-  while(fscanf(f,"%d %d",&a,&b)==2){ea[M]=a;eb[M]=b;M++;}
+  while(fscanf(f,"%d %d",&a,&b)==2){if(M==cap){cap*=2;ea=realloc(ea,cap*4);eb=realloc(eb,cap*4);} ea[M]=a;eb[M]=b;M++;}
   int*deg=calloc(N+1,4),*ptr=calloc(N+1,4),*nbr=malloc(2*M*4),*fill=calloc(N,4);
   for(int i=0;i<M;i++){deg[ea[i]]++;deg[eb[i]]++;}
   for(int i=0;i<N;i++)ptr[i+1]=ptr[i]+deg[i];
