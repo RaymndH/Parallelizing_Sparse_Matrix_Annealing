@@ -81,3 +81,8 @@ LIN=1 ./seq N-1e3_c-18.0_q-5 1.4 0 28000 10 splits1e3.txt     # independent-set 
 - `par_u8.c`: copy of `par.c` with colours and neighbour counts stored as bytes (max degree must be at most 255, checked at startup).
   Identical results; 12 to 22% faster per sweep at N = 10^6 (1 to 128 threads), no gain at 10^5.
   Best setting found at N = 10^6: `OMP_NUM_THREADS=128 OMP_PROC_BIND=close` (one thread per physical core on a 2 x 64-core machine), about 2.3 ms per sweep.
+- `par_rsa.c`: replicated simulated annealing on the CPU (OpenMP), same coupling as `anneal_gpu.py --y`.
+  `OMP_NUM_THREADS=16 ./par_rsa graph T0 T1 sweeps runs y gamma [splits.txt]`. The y replicas of a run are updated one after
+  another (each stage parallel over the nodes of an independent set); with y = 1 it reproduces `par.c` exactly, and results do not
+  depend on the thread count. At N = 10^5, c = 18, linear 1.4 -> 0 over 1.4M sweeps, 16 threads, y = 2, gamma = 1: 2 of 2 runs solved
+  (about 1.21M sweeps, 990 s each), where plain SA stalled near 13.5k conflicts in all 12 runs (2 CPU, 10 GPU).
