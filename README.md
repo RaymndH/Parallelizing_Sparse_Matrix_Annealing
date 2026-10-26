@@ -78,3 +78,6 @@ LIN=1 ./seq N-1e3_c-18.0_q-5 1.4 0 28000 10 splits1e3.txt     # independent-set 
   on the linear 1.4 to 0 schedule), push wins below. `SWITCH_T=0.9` was about 9% faster than push-only at N = 10^5, 16 threads.
   `TRACE=k` also prints the acceptance rate and time per sweep.
 - `anneal_gpu.py`: colours and colour offsets are stored as int8. 8 to 17% faster for 10 seeds at N = 10^5 and 10^6, no gain at 10^4.
+- `par_u8.c`: copy of `par.c` with colours and neighbour counts stored as bytes (max degree must be at most 255, checked at startup).
+  Identical results; 12 to 22% faster per sweep at N = 10^6 (1 to 128 threads), no gain at 10^5.
+  Best setting found at N = 10^6: `OMP_NUM_THREADS=128 OMP_PROC_BIND=close` (one thread per physical core on a 2 x 64-core machine), about 2.3 ms per sweep.
