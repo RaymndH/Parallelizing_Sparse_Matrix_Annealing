@@ -5,6 +5,8 @@
 //   One sweep visits the replicas of a run one after another (replica k: every independent set in turn, nodes of a set
 //   in parallel), so it equals a sequential sweep. Solved replicas (0 conflicts) are frozen; a run is solved when all
 //   its replicas are. With y=1 the result is identical to par.c. Random numbers hash (seed, sweep, replica, node).
+//   env DUMP=a,b,c and DUMP_PREFIX=path: write every replica's colours (one byte per node) after sweeps a,b,c of run 0 to
+//   <prefix>_s<sweep>_r<replica>.bin; env STOP_AFTER=s ends the run after sweep s (the schedule is unchanged).
 //   splits.txt as in par.c (e.g. from dsatur_split); env LIN=1 linear schedule, TRACE=k prints min/mean conflicts.
 // build: gcc -O3 -march=native -fopenmp -o par_rsa par_rsa.c -lm
 #include <stdio.h>
@@ -54,6 +56,8 @@ int main(int argc,char**argv){
   }
   int*q=malloc((size_t)Y*N*4),*A=calloc((size_t)Y*N*Q,4); long*Ek=malloc(Y*sizeof(long)); int*frozen=calloc(Y,4);
   int ok=0; double tsum=0; long swsum=0;
+  int ndump=0; long dumpsw[4096]; const char*dp=getenv("DUMP_PREFIX"); long stop_after=getenv("STOP_AFTER")?atol(getenv("STOP_AFTER")):-1;
+  if(getenv("DUMP")&&dp){ char*tmp=strdup(getenv("DUMP")); for(char*tok=strtok(tmp,",");tok&&ndump<4096;tok=strtok(NULL,","))dumpsw[ndump++]=atol(tok); }
   printf("runs=%d y=%d gamma=%g\n",seeds,Y,gamma);
   for(int sd=0;sd<seeds;sd++){
     uint64_t seed=mix(0x1234567ULL+sd); s=seed|1;
@@ -96,7 +100,8 @@ int main(int argc,char**argv){
       #pragma omp single
       { if(trace&&sw%trace==0){ double now=omp_get_wtime(); int dsw=sw-lastsw>0?sw-lastsw:1; long mn=Ek[0],sm=0; for(int k=0;k<Y;k++){if(Ek[k]<mn)mn=Ek[k]; sm+=Ek[k];}
           printf("trace sweep=%d T=%.4f conflicts_min=%ld conflicts_mean=%.1f us/sweep=%.1f\n",sw,T,mn,(double)sm/Y,1e6*(now-tlast)/dsw); lastsw=sw; tlast=now; }
-        int all=1; for(int k=0;k<Y;k++)if(Ek[k]!=0)all=0; if(all){stop=1;used=sw+1;} }
+        if(sd==0)for(int d=0;d<ndump;d++)if(dumpsw[d]==sw){ for(int k=0;k<Y;k++){ char fn[512]; snprintf(fn,sizeof fn,"%s_s%d_r%d.bin",dp,sw,k); FILE*fo=fopen(fn,"wb"); unsigned char*bb=malloc(N); for(int i=0;i<N;i++)bb[i]=(unsigned char)q[(size_t)k*N+i]; fwrite(bb,1,N,fo); fclose(fo); free(bb);} }
+        int all=1; for(int k=0;k<Y;k++)if(Ek[k]!=0)all=0; if(all){stop=1;used=sw+1;} if(stop_after>=0&&sw>=stop_after){stop=1;used=sw+1;} }
       if(stop)break;
     }
     double el=omp_get_wtime()-t; int all=1;
