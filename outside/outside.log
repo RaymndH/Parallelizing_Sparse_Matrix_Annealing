@@ -1,0 +1,12 @@
+== kissat 1e4 (limit 900s)
+real	15m0.007s
+== cpsat 1e4 (limit 900s, 8 workers)
+CP-SAT: UNKNOWN after 900.8s (no solution)
+== neal 1e4 (1000 sweeps)
+neal: 1000 sweeps in 2.6s, nodes not one-hot 398, conflicts after decoding 3349
+== kissat 1e5 (limit 1800s)
+real	30m0.021s
+== cpsat 1e5 (limit 1800s, 8 workers)
+CP-SAT: UNKNOWN after 1818.4s (no solution)
+== neal 1e5 (1000 sweeps)
+neal: 1000 sweeps in 45.2s, nodes not one-hot 3977, conflicts after decoding 33623
